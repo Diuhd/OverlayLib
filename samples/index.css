@@ -1,0 +1,87 @@
+:root {
+  --box-x: 0px;
+  --box-y: 0px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  user-select: none;
+}
+
+body {
+  position: relative;
+}
+
+.clock-module {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: min(280px, calc(100vw - 24px));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(20, 20, 20, 0.92);
+  transform: translate3d(var(--box-x), var(--box-y), 0);
+  touch-action: none;
+  will-change: transform;
+}
+
+.clock-module.dragging {
+  opacity: 0.95;
+}
+
+.drag-handle {
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: grab;
+  font: inherit;
+  text-align: left;
+}
+
+.drag-handle:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.clock-module.dragging .drag-handle {
+  cursor: grabbing;
+}
+
+.display {
+  padding: 12px;
+}
+
+.time {
+  margin: 0;
+  color: #ffffff;
+  font-family: monospace;
+  font-size: clamp(2rem, 10vw, 2.8rem);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.date {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 520px) {
+  .clock-module {
+    width: calc(100vw - 16px);
+  }
+}
