@@ -19,9 +19,11 @@ Overlay::Overlay(
     std::filesystem::path path
 ): application_id_(std::move(app_id)), html_to_render(std::move(path)) {}
 
-void Overlay::set_fullscreen(bool yn) {
-    is_fullscreen = yn;
-}
+void Overlay::set_fullscreen(bool yn) { is_fullscreen = yn; }
+
+void Overlay::allow_passthrough(bool yn) { passthrough = yn; }
+
+void Overlay::config_dev_mode(bool yn) { developer_mode = yn; }
 
 void Overlay::set_window_dimensions(const size_t x, const size_t y, const size_t width, const size_t height) {
     x_ = x;
@@ -33,6 +35,7 @@ void Overlay::set_window_dimensions(const size_t x, const size_t y, const size_t
 void Overlay::configure_layer_surface(GtkWindow* window) const {
     gtk_layer_init_for_window(window);
     gtk_layer_set_layer(window, GTK_LAYER_SHELL_LAYER_TOP);
+    gtk_layer_set_keyboard_mode(window, GTK_LAYER_SHELL_KEYBOARD_MODE_ON_DEMAND);
 
     if (is_fullscreen) {
         // A fullscreen overlay should not reserve the entire output for itself.
@@ -113,49 +116,51 @@ void Overlay::handle_click_message(JSCValue *js_result) const {
 
 GtkWidget* Overlay::create_webview() const {
     auto* manager = webkit_user_content_manager_new();
+    
+    if (passthrough) {
+        webkit_user_content_manager_register_script_message_handler(manager, "region", nullptr);
+        g_signal_connect(manager, "script-message-received::region",
+            G_CALLBACK(+[](
+                [[maybe_unused]] WebKitUserContentManager* manager, 
+                [[maybe_unused]] JSCValue* js_result, 
+                [[maybe_unused]] gpointer user_data) {
+                    auto *overlay = static_cast<Overlay*>(user_data);
+                    overlay->handle_click_message(js_result);
+                }
+            ), gpointer(this)
+        );
 
-    webkit_user_content_manager_register_script_message_handler(manager, "region", nullptr);
-    g_signal_connect(manager, "script-message-received::region",
-        G_CALLBACK(+[](
-            [[maybe_unused]] WebKitUserContentManager* manager, 
-            [[maybe_unused]] JSCValue* js_result, 
-            [[maybe_unused]] gpointer user_data) {
-                auto *overlay = static_cast<Overlay*>(user_data);
-                overlay->handle_click_message(js_result);
-            }
-        ), gpointer(this)
-    );
+        auto* script = webkit_user_script_new(
+            R"(
+                function sendInputRegion() {
+                    const box = document.getElementById("box");
+                    if (!box) {
+                        return;
+                    }
 
-    auto* script = webkit_user_script_new(
-        R"(
-            function sendInputRegion() {
-                const box = document.getElementById("box");
-                if (!box) {
-                    return;
+                    const rect = box.getBoundingClientRect();
+
+                    window.webkit.messageHandlers.region.postMessage({
+                        x: Math.round(rect.left),
+                        y: Math.round(rect.top),
+                        width: Math.round(rect.width),
+                        height: Math.round(rect.height)
+                    });
                 }
 
-                const rect = box.getBoundingClientRect();
+                window.addEventListener("load", sendInputRegion);
+                window.addEventListener("resize", sendInputRegion);
+                document.addEventListener("pointerup", sendInputRegion);
+            )",
+            WEBKIT_USER_CONTENT_INJECT_ALL_FRAMES,
+            WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START,
+            nullptr,
+            nullptr
+        );
 
-                window.webkit.messageHandlers.region.postMessage({
-                    x: Math.round(rect.left),
-                    y: Math.round(rect.top),
-                    width: Math.round(rect.width),
-                    height: Math.round(rect.height)
-                });
-            }
-
-            window.addEventListener("load", sendInputRegion);
-            window.addEventListener("resize", sendInputRegion);
-            document.addEventListener("pointerup", sendInputRegion);
-        )",
-        WEBKIT_USER_CONTENT_INJECT_ALL_FRAMES,
-        WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START,
-        nullptr,
-        nullptr
-    );
-
-    webkit_user_content_manager_add_script(manager, script);
-    webkit_user_script_unref(script);
+        webkit_user_content_manager_add_script(manager, script);
+        webkit_user_script_unref(script);
+    }
 
     auto* settings = webkit_settings_new();
     webkit_settings_set_hardware_acceleration_policy(
@@ -164,6 +169,8 @@ GtkWidget* Overlay::create_webview() const {
     );
     webkit_settings_set_enable_2d_canvas_acceleration(settings, TRUE);
     webkit_settings_set_enable_page_cache(settings, TRUE);
+
+    webkit_settings_set_enable_developer_extras(settings, developer_mode);
 
     webkit_settings_set_draw_compositing_indicators(settings, FALSE); // Only for debugging (telling if compositing is happeninf)
     
@@ -230,8 +237,10 @@ void Overlay::activate(GtkApplication* app) {
         gtk_window_set_default_size(window, window_width_, window_height_);
     }
     auto* webview = create_webview();
+    gtk_widget_set_focusable(webview, TRUE);
     gtk_window_set_child(window, webview);
     gtk_window_present(window);
+    gtk_widget_grab_focus(webview);
 }
 
 int Overlay::run(int argc, char** argv) {

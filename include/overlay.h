@@ -25,7 +25,10 @@ class Overlay {
         explicit Overlay(std::string app_id, std::filesystem::path path);
         int run(int argc, char** argv);
         void set_window_dimensions(const size_t x, const size_t y, const size_t width, const size_t height);
+        
         void set_fullscreen(bool yn);
+        void allow_passthrough(bool yn);
+        void config_dev_mode(bool yn);
     private:
         void configure_layer_surface(GtkWindow* window) const;
         void activate(GtkApplication* app);
@@ -39,7 +42,10 @@ class Overlay {
         std::string application_id_;
         std::filesystem::path html_to_render;
 
+        // ENV VAR
         bool is_fullscreen = false;
+        bool passthrough = true;
+        bool developer_mode = false;
 
         size_t x_ = 0;
         size_t y_ = 0; 
