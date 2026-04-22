@@ -9,6 +9,14 @@ CONTAINER_HOME="${CONTAINER_HOME:-/tmp/overlaylib-home}"
 CONTAINER_CACHE="${CONTAINER_CACHE:-${CONTAINER_HOME}/.cache}"
 CONTAINER_CMD="${CONTAINER_CMD:-mkdir -p '${CONTAINER_HOME}' '${CONTAINER_CACHE}'; meson setup ${BUILD_DIR} --reconfigure || meson setup ${BUILD_DIR}; meson compile -C ${BUILD_DIR}; ./${BUILD_DIR}/overlaylib}"
 
+DOCKER_SECURITY_OPTS=(--security-opt seccomp=unconfined)
+
+if [[ -r /sys/module/apparmor/parameters/enabled ]] && grep -qx 'Y' /sys/module/apparmor/parameters/enabled; then
+    # Ubuntu and other AppArmor hosts may block unprivileged user namespaces
+    # unless the container profile is relaxed.
+    DOCKER_SECURITY_OPTS+=(--security-opt apparmor=unconfined)
+fi
+
 if [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then
     echo "XDG_RUNTIME_DIR is not set. Start this from your Wayland session." >&2
     exit 1
@@ -31,13 +39,14 @@ docker run --rm -it \
     --user "$(id -u):$(id -g)" \
     --network host \
     --device /dev/dri \
+    --privileged \
+    "${DOCKER_SECURITY_OPTS[@]}" \
     -e HOME="${CONTAINER_HOME}" \
     -e WAYLAND_DISPLAY \
     -e XDG_RUNTIME_DIR \
     -e XDG_CACHE_HOME="${CONTAINER_CACHE}" \
     -e DISPLAY="${DISPLAY:-}" \
     -e DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-}" \
-    -e WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 \
     -v "${ROOT_DIR}:/workspace" \
     -v "${XDG_RUNTIME_DIR}:${XDG_RUNTIME_DIR}" \
     -w /workspace \

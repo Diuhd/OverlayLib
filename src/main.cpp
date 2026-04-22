@@ -1,9 +1,14 @@
 #include "overlay.h"
 
+#include <utility>
+
 int main(int argc, char** argv) {
-    Overlay overlay{"io.diuhd.overlaylib", "samples/index.html"};
-    overlay.set_window_dimensions(0, 0, 1080, 720);
-    overlay.allow_passthrough(false);
-    overlay.config_dev_mode(true);
+    OverlayConfig config{"io.diuhd.overlaylib", "samples/index.html"};
+    config.window()
+        .set_fullscreen(true)
+        .set_passthrough(true);
+    config.webview().set_developer_mode(false);
+
+    Overlay overlay{std::move(config)};
     return overlay.run(argc, argv);
 }

@@ -19,7 +19,10 @@ executable(
     'overlaylib',
     [
         'src/main.cpp',
+        'src/overlay_config.cpp',
         'src/overlay.cpp',
+        'src/overlay_window.cpp',
+        'src/overlay_webview.cpp',
     ],
     dependencies: [gtk_dep, layer_shell_dep, webkit_dep],
     include_directories: inc

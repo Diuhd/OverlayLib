@@ -25,14 +25,20 @@ That script will:
 - mount your repo into the container
 - forward your Wayland socket into the container
 - set a writable `HOME` and `XDG_CACHE_HOME` inside the container
-- disable the WebKitGTK bubblewrap sandbox for this container run
+- relax Docker security policy enough for WebKitGTK's own bubblewrap sandbox to start
 - build the project into `builddir-docker`
 - launch `./builddir-docker/overlaylib`
 
-The sandbox disable is intentional here because some Docker setups do not allow
-the unprivileged user namespaces that WebKitGTK's internal bubblewrap sandbox
-expects. This is fine for local debugging, but it is less secure than a normal
-desktop install.
+The script now keeps the WebKitGTK sandbox enabled and instead adjusts the
+container runtime so WebKit can create the namespaces it needs. In practice
+that means running the container with `seccomp=unconfined`, and additionally
+`apparmor=unconfined` on AppArmor hosts, because Docker's defaults can block
+the namespace syscalls that bubblewrap relies on.
+
+If your host globally disables unprivileged user namespaces, WebKitGTK may
+still fail to start its sandbox. In that case you will need to allow user
+namespaces on the host rather than disabling the WebKit sandbox in the
+container.
 
 ### Run a different command
 
