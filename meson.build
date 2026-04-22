@@ -15,6 +15,8 @@ layer_shell_dep = dependency('gtk4-layer-shell-0')
 
 webkit_dep = dependency('webkitgtk-6.0', required: false)
 
+argparse = dependency('argparse')
+
 executable(
     'overlaylib',
     [
@@ -24,6 +26,6 @@ executable(
         'src/overlay_window.cpp',
         'src/overlay_webview.cpp',
     ],
-    dependencies: [gtk_dep, layer_shell_dep, webkit_dep],
+    dependencies: [gtk_dep, layer_shell_dep, webkit_dep, argparse],
     include_directories: inc
 )
