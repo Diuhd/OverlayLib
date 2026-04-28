@@ -1,10 +1,14 @@
 #include "overlay.h"
 
+#include "component_loader.h"
+#include "glib.h"
 #include "overlay_webview.h"
 #include "overlay_window.h"
 
+#include <iostream>
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace {
 struct GObjectUnref {
@@ -55,8 +59,8 @@ void Overlay::activate(GtkApplication* app) {
     webview_controller_ = std::make_unique<OverlayWebView>(
         config_.webview(),
         config_.window().is_passthrough_enabled(),
-        [window_controller = window_controller_.get()](const int x, const int y, const int width, const int height) {
-            window_controller->set_input_rect(x, y, width, height);
+        [this](const std::vector<InputRegion> &rects) {
+            window_controller_->set_input_rect(rects);
         }
     );
 

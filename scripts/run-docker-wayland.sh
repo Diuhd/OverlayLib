@@ -3,11 +3,11 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-IMAGE_NAME="${IMAGE_NAME:-overlaylib:arch-webkit}"
+IMAGE_NAME="${IMAGE_NAME:-ovl_runtime:arch-webkit}"
 BUILD_DIR="${BUILD_DIR:-builddir-docker}"
-CONTAINER_HOME="${CONTAINER_HOME:-/tmp/overlaylib-home}"
+CONTAINER_HOME="${CONTAINER_HOME:-/tmp/ovl_runtime-home}"
 CONTAINER_CACHE="${CONTAINER_CACHE:-${CONTAINER_HOME}/.cache}"
-CONTAINER_CMD="${CONTAINER_CMD:-mkdir -p '${CONTAINER_HOME}' '${CONTAINER_CACHE}'; meson setup ${BUILD_DIR} --reconfigure || meson setup ${BUILD_DIR}; meson compile -C ${BUILD_DIR}; ./${BUILD_DIR}/overlaylib}"
+CONTAINER_CMD="${CONTAINER_CMD:-mkdir -p '${CONTAINER_HOME}' '${CONTAINER_CACHE}'; meson setup ${BUILD_DIR} --reconfigure || meson setup ${BUILD_DIR}; meson compile -C ${BUILD_DIR}; ./${BUILD_DIR}/ovl_runtime}"
 
 DOCKER_SECURITY_OPTS=(--security-opt seccomp=unconfined)
 

@@ -1,0 +1,17 @@
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    background: transparent;
+}
+
+body {
+    overflow: hidden;
+}
+
+#overlay-root {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+}

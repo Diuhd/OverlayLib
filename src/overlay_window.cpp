@@ -6,6 +6,7 @@
 
 #include <array>
 #include <utility>
+#include <vector>
 
 GtkWindow* OverlayWindow::create(
     GtkApplication* app,
@@ -25,22 +26,39 @@ GtkWindow* OverlayWindow::create(
     return window_;
 }
 
-void OverlayWindow::set_input_rect(const int x, const int y, const int width, const int height) const {
+void OverlayWindow::set_input_rect(const std::vector<InputRegion> &rects) const {
     if (window_ == nullptr) {
         return;
     }
 
+    if (rects == input_rects_) {
+        return;
+    }
+
     auto* native = gtk_widget_get_native(GTK_WIDGET(window_));
+    if (native == nullptr) {
+        return;
+    }
+
     auto* surface = gtk_native_get_surface(native);
+    if (surface == nullptr) {
+        return;
+    }
 
-    cairo_rectangle_int_t rect{
-        .x = x,
-        .y = y,
-        .width = width,
-        .height = height,
-    };
+    input_rects_ = rects;
 
-    auto* region = cairo_region_create_rectangle(&rect);
+    auto* region = cairo_region_create();
+
+    for (const auto& rect: rects) {
+        cairo_rectangle_int_t cairo_rect {
+            .x = rect.x,
+            .y = rect.y,
+            .width = rect.width,
+            .height = rect.height
+        };
+        cairo_region_union_rectangle(region, &cairo_rect);
+    }
+
     gdk_surface_set_input_region(surface, region);
     cairo_region_destroy(region);
 }

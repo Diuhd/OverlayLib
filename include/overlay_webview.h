@@ -4,14 +4,16 @@
 #include "overlay_config.h"
 
 #include "jsc/jsc.h"
+#include "overlay_window.h"
 
+#include <vector>
 #include <functional>
 
 #include <gtk/gtk.h>
 
 class OverlayWebView {
     public:
-        using InputRegionHandler = std::function<void(int x, int y, int width, int height)>;
+        using InputRegionHandler = std::function<void(const std::vector<InputRegion>&)>;
 
         OverlayWebView(OverlayWebViewConfig config, bool passthrough, InputRegionHandler input_region_handler);
 

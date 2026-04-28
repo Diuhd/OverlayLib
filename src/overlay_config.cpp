@@ -1,5 +1,10 @@
 #include "overlay_config.h"
 
+#include "component_loader.h"
+#include <glib.h>
+
+#include <filesystem>
+#include <iostream>
 #include <utility>
 
 OverlayWindowConfig& OverlayWindowConfig::set_bounds(
@@ -49,12 +54,49 @@ OverlayWebViewConfig& OverlayWebViewConfig::set_developer_mode(const bool enable
     return *this;
 }
 
+OverlayWebViewConfig& OverlayWebViewConfig::load_components() {
+    create_component_manifests();
+    return *this;
+}
+
 const std::filesystem::path& OverlayWebViewConfig::html_path() const noexcept {
     return html_path_;
 }
 
+const std::vector<json>& OverlayWebViewConfig::component_manifests() const noexcept {
+    return manifests_;
+}
+
 bool OverlayWebViewConfig::is_developer_mode_enabled() const noexcept {
     return developer_mode_;
+}
+
+void OverlayWebViewConfig::create_component_manifests() {
+    namespace fs = std::filesystem;
+
+    manifests_.clear();
+
+    const char* user_data_dir = g_get_user_data_dir();
+    if (user_data_dir == nullptr || *user_data_dir == '\0') {
+        std::cerr << "Unable to resolve user data directory for overlay components\n";
+        return;
+    }
+
+    const fs::path app_data_path = fs::path(user_data_dir) / "ovl" / "overlays";
+    if (!fs::exists(app_data_path)) {
+        return;
+    }
+
+    for (const auto& dir : fs::directory_iterator(app_data_path)) {
+        if (!dir.is_directory()) continue;
+
+        try {
+            ComponentLoader loader(dir.path());
+            manifests_.push_back(loader.generate_manifest());
+        } catch (const std::exception& error) {
+            std::cerr << "Failed to load component at " << dir.path() << ": " << error.what() << '\n';
+        }
+    }
 }
 
 OverlayConfig::OverlayConfig(std::string application_id, std::filesystem::path html_path)

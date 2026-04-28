@@ -8,6 +8,8 @@ RUN pacman -Syu --noconfirm \
         ninja \
         pkgconf \
         webkitgtk-6.0 \
+        nlohmann-json \
+        tomlplusplus \
     && pacman -Scc --noconfirm
 
 WORKDIR /workspace

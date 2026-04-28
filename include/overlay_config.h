@@ -4,6 +4,11 @@
 #include <cstddef>
 #include <filesystem>
 #include <string>
+#include <vector>
+
+#include "nlohmann/json.hpp"
+
+using json = nlohmann::json;
 
 struct OverlayBounds {
     size_t x = 0;
@@ -31,14 +36,19 @@ class OverlayWindowConfig {
 class OverlayWebViewConfig {
     public:
         OverlayWebViewConfig& set_html_path(std::filesystem::path html_path);
+        OverlayWebViewConfig& load_components();
         OverlayWebViewConfig& set_developer_mode(bool enabled);
 
         [[nodiscard]] const std::filesystem::path& html_path() const noexcept;
+        [[nodiscard]] const std::vector<json>& component_manifests() const noexcept;
         [[nodiscard]] bool is_developer_mode_enabled() const noexcept;
 
     private:
         std::filesystem::path html_path_;
         bool developer_mode_ = false;
+
+        void create_component_manifests();
+        std::vector<json> manifests_;
 };
 
 class OverlayConfig {

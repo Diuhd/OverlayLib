@@ -1,5 +1,5 @@
 project(
-    'overlaylib',
+    'ovl_runtime',
     'cpp',
     version: '0.1.0',
     default_options: [
@@ -15,17 +15,19 @@ layer_shell_dep = dependency('gtk4-layer-shell-0')
 
 webkit_dep = dependency('webkitgtk-6.0', required: false)
 
-argparse = dependency('argparse')
+nlohmann_json = dependency('nlohmann_json')
+tomlpp_dep = dependency('tomlplusplus')
 
 executable(
-    'overlaylib',
+    'ovl_runtime',
     [
         'src/main.cpp',
+        'src/component_loader.cpp',
         'src/overlay_config.cpp',
         'src/overlay.cpp',
         'src/overlay_window.cpp',
         'src/overlay_webview.cpp',
     ],
-    dependencies: [gtk_dep, layer_shell_dep, webkit_dep, argparse],
+    dependencies: [gtk_dep, layer_shell_dep, webkit_dep, nlohmann_json, tomlpp_dep],
     include_directories: inc
 )

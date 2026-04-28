@@ -1,11 +1,15 @@
 #include "overlay_webview.h"
 
 #include "glib-object.h"
+#include "glibconfig.h"
 #include "gtk/gtkcssprovider.h"
+#include "jsc/jsc.h"
 #include "webkit/webkit.h"
 
 #include <filesystem>
+#include <sstream>
 #include <utility>
+#include <vector>
 
 namespace {
 constexpr auto kMissingHtmlFallback = R"(
@@ -21,26 +25,80 @@ constexpr auto kMissingHtmlFallback = R"(
 )";
 
 constexpr auto kInputRegionScript = R"(
-    function sendInputRegion() {
-        const box = document.getElementById("box");
-        if (!box) {
+    function postInputRegion(rect_array) {
+        window.webkit.messageHandlers.region.postMessage({
+            rects: rect_array
+        });
+    }
+
+    function sendInputRegion(event) {
+        if (event && event.detail && event.detail.fullWindow) {
+            postInputRegion([{
+                x: 0,
+                y: 0,
+                width: window.innerWidth,
+                height: window.innerHeight
+            }]);
             return;
         }
 
-        const rect = box.getBoundingClientRect();
-
-        window.webkit.messageHandlers.region.postMessage({
-            x: Math.round(rect.left),
-            y: Math.round(rect.top),
-            width: Math.round(rect.width),
-            height: Math.round(rect.height)
+        const rects = Array.from(document.querySelectorAll("div.overlay-elem")).map((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                x: Math.round(rect.left),
+                y: Math.round(rect.top),
+                width: Math.round(rect.width),
+                height: Math.round(rect.height),
+            };
         });
+        postInputRegion(rects);
     }
 
     window.addEventListener("load", sendInputRegion);
     window.addEventListener("resize", sendInputRegion);
-    document.addEventListener("pointerup", sendInputRegion);
+    document.addEventListener("ovl:input-region-changed", sendInputRegion);
 )";
+
+constexpr auto kDisableTextSelection = R"(
+    let isDragging = false;
+
+    document.addEventListener("pointerdown", () => {
+        isDragging = false;
+    });
+
+    document.addEventListener("pointermove", () => {
+        isDragging = true;
+    });
+
+    document.addEventListener("selectstart", (e) => {
+        if (isDragging) e.preventDefault();
+    });
+)"; // Prevents text selection
+
+
+std::string build_component_manifest_script(const std::vector<json>& manifests) {
+    std::ostringstream script;
+    script
+        << "(() => {\n"
+        << "  const manifests = " << json(manifests).dump() << ";\n"
+        << "  window.__OVL_MANIFESTS__ = manifests;\n"
+        << "  window.ovlRuntime = Object.freeze({\n"
+        << "    getManifests: () => JSON.parse(JSON.stringify(manifests))\n"
+        << "  });\n"
+        << "  window.dispatchEvent(new CustomEvent('ovl:manifests-ready', { detail: manifests }));\n"
+        << "})();\n";
+    return script.str();
+}
+
+static gboolean on_context_menu(
+    [[maybe_unused]] WebKitWebView *web_view,
+    [[maybe_unused]] WebKitContextMenu *context_menu,
+    [[maybe_unused]] GdkEvent *event,
+    [[maybe_unused]] WebKitHitTestResult *hit_test_result,
+    [[maybe_unused]] gpointer user_data
+){
+    return TRUE;
+}
 } // namespace
 
 OverlayWebView::OverlayWebView(
@@ -53,6 +111,17 @@ OverlayWebView::OverlayWebView(
 
 GtkWidget* OverlayWebView::create() const {
     auto* manager = webkit_user_content_manager_new();
+
+    const auto manifest_script = build_component_manifest_script(config_.component_manifests());
+    auto* component_script = webkit_user_script_new(
+        manifest_script.c_str(),
+        WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
+        WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START,
+        nullptr,
+        nullptr
+    );
+    webkit_user_content_manager_add_script(manager, component_script);
+    webkit_user_script_unref(component_script);
 
     if (passthrough_) {
         webkit_user_content_manager_register_script_message_handler(manager, "region", nullptr);
@@ -72,7 +141,7 @@ GtkWidget* OverlayWebView::create() const {
 
         auto* script = webkit_user_script_new(
             kInputRegionScript,
-            WEBKIT_USER_CONTENT_INJECT_ALL_FRAMES,
+            WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
             WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START,
             nullptr,
             nullptr
@@ -80,6 +149,18 @@ GtkWidget* OverlayWebView::create() const {
 
         webkit_user_content_manager_add_script(manager, script);
         webkit_user_script_unref(script);
+    }
+
+    if (!config_.is_developer_mode_enabled()) {
+        auto *disable_patch = webkit_user_script_new(
+            kDisableTextSelection, 
+            WEBKIT_USER_CONTENT_INJECT_TOP_FRAME, 
+            WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, 
+            nullptr, 
+            nullptr
+        );
+        webkit_user_content_manager_add_script(manager, disable_patch);
+        webkit_user_script_unref(disable_patch);
     }
 
     auto* settings = webkit_settings_new();
@@ -91,6 +172,7 @@ GtkWidget* OverlayWebView::create() const {
     webkit_settings_set_enable_page_cache(settings, TRUE);
     webkit_settings_set_enable_developer_extras(settings, config_.is_developer_mode_enabled());
     webkit_settings_set_draw_compositing_indicators(settings, FALSE);
+    webkit_settings_set_allow_file_access_from_file_urls(settings, TRUE);
 
     auto* webview = static_cast<GtkWidget*>(g_object_new(
         WEBKIT_TYPE_WEB_VIEW,
@@ -100,6 +182,11 @@ GtkWidget* OverlayWebView::create() const {
     ));
     g_object_unref(settings);
     g_object_unref(manager);
+
+    if (!config_.is_developer_mode_enabled()) {
+        g_signal_connect(webview, "context-menu", G_CALLBACK(on_context_menu), NULL);
+        // Disables context-menu
+    }
 
     const GdkRGBA bg_color{0.0f, 0.0f, 0.0f, 0.0f};
     webkit_web_view_set_background_color(WEBKIT_WEB_VIEW(webview), &bg_color);
@@ -120,28 +207,45 @@ GtkWidget* OverlayWebView::create() const {
 
 void OverlayWebView::handle_click_message(JSCValue* js_result) const {
     if (!jsc_value_is_object(js_result)) {
-        g_warning("Received click message, but payload is not an object.");
+        g_warning("Received click message, but payload is not an object of rects.");
         return;
     }
+    g_autoptr(JSCValue) rects = jsc_value_object_get_property(js_result, "rects");
+    if (!jsc_value_is_object(rects)) return;
 
-    g_autoptr(JSCValue) x = jsc_value_object_get_property(js_result, "x");
-    g_autoptr(JSCValue) y = jsc_value_object_get_property(js_result, "y");
-    g_autoptr(JSCValue) width = jsc_value_object_get_property(js_result, "width");
-    g_autoptr(JSCValue) height = jsc_value_object_get_property(js_result, "height");
+    g_autoptr(JSCValue) length_value = jsc_value_object_get_property(rects, "length");
+    if (!jsc_value_is_number(length_value)) return;
 
-    if (
-        jsc_value_is_number(x)
-        && jsc_value_is_number(y)
-        && jsc_value_is_number(width)
-        && jsc_value_is_number(height)
-    ) {
-        input_region_handler_(
-            jsc_value_to_int32(x),
-            jsc_value_to_int32(y),
-            jsc_value_to_int32(width),
-            jsc_value_to_int32(height)
-        );
+    const int length = jsc_value_to_int32(length_value);
+
+    std::vector<InputRegion> v;
+    v.reserve(length);
+
+    for (int i = 0; i < length; i++) {
+        const auto index = std::to_string(i);
+        g_autoptr(JSCValue) rect = jsc_value_object_get_property(rects, index.c_str());
+        if (!jsc_value_is_object(rect)) return;
+
+        g_autoptr(JSCValue) x = jsc_value_object_get_property(rect, "x");
+        g_autoptr(JSCValue) y = jsc_value_object_get_property(rect, "y");
+        g_autoptr(JSCValue) width = jsc_value_object_get_property(rect, "width");
+        g_autoptr(JSCValue) height = jsc_value_object_get_property(rect, "height");
+
+        if (
+            jsc_value_is_number(x)
+            && jsc_value_is_number(y)
+            && jsc_value_is_number(width)
+            && jsc_value_is_number(height)
+        ) {
+            const int rect_x = jsc_value_to_int32(x);
+            const int rect_y = jsc_value_to_int32(y);
+            const int rect_width = jsc_value_to_int32(width);
+            const int rect_height = jsc_value_to_int32(height);
+            v.push_back({rect_x, rect_y, rect_width, rect_height});
+        }
     }
+
+    input_region_handler_(v);
 }
 
 void OverlayWebView::load_content(GtkWidget* webview) const {
