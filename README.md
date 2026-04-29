@@ -80,7 +80,6 @@ width = 320
 height = 180
 x = 40
 y = 40
-always_on_display = true
 movable = true
 move_element = "titlebar"
 ```
