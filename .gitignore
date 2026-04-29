@@ -1,3 +1,7 @@
 builddir/
 builddir-docker/
 .codex
+.flatpak-builder/
+build-flatpak/
+.scripts/
+ovl_runtime.flatpak

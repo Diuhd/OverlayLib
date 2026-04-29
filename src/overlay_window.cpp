@@ -31,7 +31,7 @@ void OverlayWindow::set_input_rect(const std::vector<InputRegion> &rects) const 
         return;
     }
 
-    if (rects == input_rects_) {
+    if (input_region_applied_ && rects == input_rects_) {
         return;
     }
 
@@ -46,6 +46,7 @@ void OverlayWindow::set_input_rect(const std::vector<InputRegion> &rects) const 
     }
 
     input_rects_ = rects;
+    input_region_applied_ = true;
 
     auto* region = cairo_region_create();
 

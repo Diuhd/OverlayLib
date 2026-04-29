@@ -29,5 +29,11 @@ executable(
         'src/overlay_webview.cpp',
     ],
     dependencies: [gtk_dep, layer_shell_dep, webkit_dep, nlohmann_json, tomlpp_dep],
-    include_directories: inc
+    include_directories: inc,
+    install: true,
+)
+
+install_subdir(
+    'ovl_host',
+    install_dir: get_option('datadir') / 'ovl_runtime',
 )

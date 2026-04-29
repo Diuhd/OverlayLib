@@ -1,0 +1,39 @@
+app-id: io.github.Diuhd.ovl_runtime
+runtime: org.gnome.Platform
+runtime-version: "50"
+sdk: org.gnome.Sdk
+command: ovl_runtime
+
+finish-args:
+  - --socket=wayland
+  - --share=ipc
+  - --device=dri
+  - --filesystem=xdg-data/ovl:create
+
+modules:
+  - name: gtk4-layer-shell
+    buildsystem: meson
+    sources:
+      - type: git
+        url: https://github.com/wmww/gtk4-layer-shell.git
+        tag: v1.3.0
+
+  - name: nlohmann-json
+    buildsystem: meson
+    sources:
+      - type: archive
+        url: https://github.com/nlohmann/json/archive/refs/tags/v3.12.0.tar.gz
+        sha256: 4b92eb0c06d10683f7447ce9406cb97cd4b453be18d7279320f7b2f025c10187
+
+  - name: tomlplusplus
+    buildsystem: meson
+    sources:
+      - type: archive
+        url: https://github.com/marzer/tomlplusplus/archive/refs/tags/v3.4.0.tar.gz
+        sha256: 8517f65938a4faae9ccf8ebb36631a38c1cadfb5efa85d9a72e15b9e97d25155
+
+  - name: ovl_runtime
+    buildsystem: meson
+    sources:
+      - type: dir
+        path: .

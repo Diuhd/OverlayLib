@@ -1,7 +1,6 @@
 #include "component_loader.h"
 
 #include <filesystem>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <toml++/impl/json_formatter.hpp>

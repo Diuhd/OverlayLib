@@ -26,6 +26,7 @@ class OverlayWindow {
         void configure_layer_surface(const OverlayWindowConfig& config) const;
 
         GtkWindow* window_ = nullptr;
+        mutable bool input_region_applied_ = false;
         mutable std::vector<InputRegion> input_rects_;
 };
 

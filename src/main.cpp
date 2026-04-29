@@ -3,7 +3,7 @@
 #include <utility>
 
 int main(int argc, char** argv) {
-    OverlayConfig config{"io.diuhd.ovl_runtime", "ovl_host/index.html"};
+    OverlayConfig config{"io.github.Diuhd.ovl_runtime", "/app/share/ovl_runtime/ovl_host/index.html"};
     config.window()
         .set_fullscreen(true)
         .set_passthrough(true);
