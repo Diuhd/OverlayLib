@@ -82,7 +82,7 @@ void OverlayWebViewConfig::create_component_manifests() {
         return;
     }
 
-    const fs::path app_data_path = fs::path(user_data_dir) / "ovl" / "overlays";
+    const fs::path app_data_path = fs::path(user_data_dir) / "ovllib" / "overlays";
     if (!fs::exists(app_data_path)) {
         return;
     }

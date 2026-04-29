@@ -1,14 +1,14 @@
-app-id: io.github.Diuhd.ovl_runtime
+app-id: io.github.Diuhd.ovllib_runtime
 runtime: org.gnome.Platform
 runtime-version: "50"
 sdk: org.gnome.Sdk
-command: ovl_runtime
+command: ovllib_runtime
 
 finish-args:
   - --socket=wayland
   - --share=ipc
   - --device=dri
-  - --filesystem=xdg-data/ovl:create
+  - --filesystem=xdg-data/ovllib:create
 
 modules:
   - name: gtk4-layer-shell
@@ -32,7 +32,7 @@ modules:
         url: https://github.com/marzer/tomlplusplus/archive/refs/tags/v3.4.0.tar.gz
         sha256: 8517f65938a4faae9ccf8ebb36631a38c1cadfb5efa85d9a72e15b9e97d25155
 
-  - name: ovl_runtime
+  - name: ovllib_runtime
     buildsystem: meson
     sources:
       - type: dir

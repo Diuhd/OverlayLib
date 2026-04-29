@@ -56,7 +56,7 @@ constexpr auto kInputRegionScript = R"(
 
     window.addEventListener("load", sendInputRegion);
     window.addEventListener("resize", sendInputRegion);
-    document.addEventListener("ovl:input-region-changed", sendInputRegion);
+    document.addEventListener("ovllib:input-region-changed", sendInputRegion);
 )";
 
 constexpr auto kDisableTextSelection = R"(
@@ -81,11 +81,11 @@ std::string build_component_manifest_script(const std::vector<json>& manifests) 
     script
         << "(() => {\n"
         << "  const manifests = " << json(manifests).dump() << ";\n"
-        << "  window.__OVL_MANIFESTS__ = manifests;\n"
-        << "  window.ovlRuntime = Object.freeze({\n"
+        << "  window.__OVLLIB_MANIFESTS__ = manifests;\n"
+        << "  window.ovllibRuntime = Object.freeze({\n"
         << "    getManifests: () => JSON.parse(JSON.stringify(manifests))\n"
         << "  });\n"
-        << "  window.dispatchEvent(new CustomEvent('ovl:manifests-ready', { detail: manifests }));\n"
+        << "  window.dispatchEvent(new CustomEvent('ovllib:manifests-ready', { detail: manifests }));\n"
         << "})();\n";
     return script.str();
 }

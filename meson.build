@@ -1,5 +1,5 @@
 project(
-    'ovl_runtime',
+    'ovllib_runtime',
     'cpp',
     version: '0.1.0',
     default_options: [
@@ -19,7 +19,7 @@ nlohmann_json = dependency('nlohmann_json')
 tomlpp_dep = dependency('tomlplusplus')
 
 executable(
-    'ovl_runtime',
+    'ovllib_runtime',
     [
         'src/main.cpp',
         'src/component_loader.cpp',
@@ -34,6 +34,6 @@ executable(
 )
 
 install_subdir(
-    'ovl_host',
-    install_dir: get_option('datadir') / 'ovl_runtime',
+    'ovllib_host',
+    install_dir: get_option('datadir') / 'ovllib_runtime',
 )

@@ -11,9 +11,9 @@ const toString = (value, fallback) => {
   return typeof value === "string" ? value : fallback;
 };
 
-const manifests = window.ovlRuntime?.getManifests?.() ?? window.__OVL_MANIFESTS__ ?? [];
+const manifests = window.ovllibRuntime?.getManifests?.() ?? window.__OVLLIB_MANIFESTS__ ?? [];
 
-window.ovlHost = {
+window.ovllibHost = {
     manifests,
 };
 
@@ -26,7 +26,6 @@ window.ovlHost = {
     "height": 400,
     "x": 40,
     "y": 40,
-    "always_on_display": true,
     "movable": true,
     "move_element": ""
   }
@@ -46,14 +45,14 @@ const notifyInputRegionChanged = (fullWindow = false) => {
     const shouldUseFullWindow = pendingFullWindowInputRegion;
     inputRegionFrame = 0;
     pendingFullWindowInputRegion = false;
-    document.dispatchEvent(new CustomEvent("ovl:input-region-changed", {
+    document.dispatchEvent(new CustomEvent("ovllib:input-region-changed", {
       detail: { fullWindow: shouldUseFullWindow },
     }));
   });
 };
 
 const interactiveSelector = [
-  ".ovl-interactive",
+  ".ovllib-interactive",
   "input",
   "textarea",
   "select",
@@ -173,7 +172,7 @@ const makeDraggable = (element, handle) => {
 const setupIframeDragging = (iframe, wrapper, moveElement) => {
   const contentDocument = iframe.contentDocument;
   if (contentDocument === null) {
-    console.warn("OVL iframe dragging unavailable: iframe document is not accessible.", {
+    console.warn("ovllib iframe dragging unavailable: iframe document is not accessible.", {
       name: iframe.title,
     });
     return;
@@ -185,7 +184,7 @@ const setupIframeDragging = (iframe, wrapper, moveElement) => {
     : Array.from(contentDocument.getElementsByClassName(className));
 
   if (handles.length === 0) {
-    console.warn("OVL iframe drag handle not found.", {
+    console.warn("ovllib iframe drag handle not found.", {
       name: iframe.title,
       moveElement,
     });
@@ -210,7 +209,7 @@ const setupIframeDragging = (iframe, wrapper, moveElement) => {
 
 const fragment = document.createDocumentFragment();
 
-for (const manifest of window.ovlHost.manifests) {
+for (const manifest of window.ovllibHost.manifests) {
   const requestedWindow = manifest.window ?? {};
   const x = toNumber(requestedWindow.x, 0);
   const y = toNumber(requestedWindow.y, 0);
@@ -246,7 +245,7 @@ for (const manifest of window.ovlHost.manifests) {
       setupIframeDragging(iframe, wrapper, moveElement);
     }
 
-    // console.log("OVL iframe loaded", {
+    // console.log("ovllib iframe loaded", {
     //   name: manifest.name,
     //   requested: { x, y, width, height },
     //   rendered: {
