@@ -13,7 +13,7 @@ back to GTK so pointer input can pass through everywhere else.
 
 - Wayland overlay windows through `gtk4-layer-shell`
 - Transparent WebKitGTK 6 WebView content
-- QOL support for building and adding overlays with [ovllib_dev]("https://github.com/Diuhd/ovllib_dev") and [ovllib]("https://github.com/Diuhd/ovllib)
+- Support for easy building and adding overlays with [ovllib_dev]("https://github.com/Diuhd/ovllib_dev") and [ovllib]("https://github.com/Diuhd/ovllib)
 - Fullscreen or bounded overlay placement
 - Optional click-through behavior with DOM-driven input regions
 - Local component discovery from `~/.local/share/ovllib/overlays`
@@ -63,7 +63,7 @@ Components are loaded from:
 ~/.local/share/ovllib/overlays/<component-name>/
 ```
 
-Each component directory must contain an `ovllib_config.toml` file. The runtime
+Each component directory must contain an `ovl_config.toml` file. The runtime
 uses that file to find the component entry point and to size/place its iframe in
 the overlay host.
 
@@ -120,7 +120,7 @@ pkg-config --modversion webkitgtk-6.0
 ### The overlay starts but no component windows appear
 
 Check that components are installed under `~/.local/share/ovllib/overlays`, and
-that every component has a valid `ovllib_config.toml` with `project.name`,
+that every component has a valid `ovl_config.toml` with `project.name`,
 `project.entry_dir`, and `project.entry_file`.
 
 Invalid components are skipped and reported on stderr.

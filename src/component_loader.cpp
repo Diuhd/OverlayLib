@@ -14,22 +14,22 @@ using json = nlohmann::json;
 
 ComponentLoader::ComponentLoader(fs::path component_path): path(std::move(component_path)) {};
 json ComponentLoader::generate_manifest() const {
-    fs::path toml_path = path / fs::path("ovllib_config.toml");
+    fs::path toml_path = path / fs::path("ovl_config.toml");
     if (!fs::exists(toml_path)) {
-        throw std::runtime_error("Invalid component: missing ovllib_config.toml");
+        throw std::runtime_error("Invalid component: missing ovl_config.toml");
     }
     toml::table tbl = toml::parse_file(toml_path.string());
     tbl.erase("build");
 
     auto proj_name = tbl["project"]["name"].value<std::string>();
     if (!proj_name.has_value()) {
-        throw std::runtime_error("Invalid ovllib_config.toml: project name is invalid");
+        throw std::runtime_error("Invalid ovl_config.toml: project name is invalid");
     }
 
     auto entry_dir = tbl["project"]["entry_dir"].value<std::string>();
     auto entry_file = tbl["project"]["entry_file"].value<std::string>();
     if (!entry_dir.has_value() || !entry_file.has_value()) {
-        throw std::runtime_error("Invalid ovllib_config.toml: project.entry_dir/project.entry_file must be a string");
+        throw std::runtime_error("Invalid ovl_config.toml: project.entry_dir/project.entry_file must be a string");
     }
     fs::path entry_path = path / *entry_dir / *entry_file;
 
